@@ -1,29 +1,36 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import * as service from "../services/employee.service";
+import { employeeSchema } from "../validations/employee.validation";
 
-export const createEmployee = async (req: Request, res: Response) => {
-  const data = await service.create(req.body);
-  res.status(201).json(data);
+export const createEmployee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const parsed = employeeSchema.parse(req.body);
+    const data = await service.create(parsed);
+
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const getEmployees = async (_: Request, res: Response) => {
-  res.json(await service.getAll());
-};
+export const getEmployeeById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const emp = await service.getById(Number(req.params.id));
 
-export const getEmployeeById = async (req: Request, res: Response) => {
-  res.json(await service.getById(Number(req.params.id)));
-};
+    if (!emp) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
 
-export const updateEmployee = async (req: Request, res: Response) => {
-  res.json(await service.update(Number(req.params.id), req.body));
-};
-
-export const deleteEmployee = async (req: Request, res: Response) => {
-  await service.remove(Number(req.params.id));
-  res.status(204).send();
-};
-
-export const getSalary = async (req: Request, res: Response) => {
-  const result = await service.getSalary(Number(req.params.id));
-  res.json(result);
+    res.json(emp);
+  } catch (err) {
+    next(err);
+  }
 };
